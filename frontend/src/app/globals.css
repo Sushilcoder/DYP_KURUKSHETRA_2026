@@ -59,3 +59,4 @@ button.output-card{background:var(--white);text-align:left;width:100%}button.out
 
 @media(max-width:800px){.output-grid.three{grid-template-columns:1fr}.slide-body.split{flex-direction:column}.slide-frame{aspect-ratio:auto}}
 @media(max-width:480px){.cs-text small{display:none}.cs-badge{padding-right:10px}}
+.evidence-chips{list-style:none;display:flex;flex-wrap:wrap;gap:8px;padding:0;margin:14px 0 0}.evidence-chips li{font:600 11px "DM Mono",monospace;color:#254cae;background:#eef3ff;border:1px solid #d7e2ff;border-radius:999px;padding:6px 11px}

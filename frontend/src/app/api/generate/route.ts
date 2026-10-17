@@ -1,5 +1,6 @@
 import { generateText, Output } from 'ai';
 import { courseRequestSchema, courseSchema } from '@/lib/course-schema';
+import { buildTemplateCourse } from '@/lib/template-course';
 
 export const maxDuration = 300;
 
@@ -41,9 +42,15 @@ Language: ${lang}${r.framework ? `\nFramework context: ${r.framework} (keep runn
         r.brandName ? `\nInstitute: ${r.brandName}` : ''
       }${r.sourceText ? `\n\nSource material to base the course on:\n${r.sourceText}` : ''}${feedbackBlock}`,
     });
-    return Response.json({ course: output, model: MODEL });
+    return Response.json({ course: output, model: MODEL, source: 'ai' });
   } catch (error) {
-    console.error('[generate] failed', error);
-    return Response.json({ error: error instanceof Error ? error.message : 'Generation failed' }, { status: 500 });
+    const reason = error instanceof Error ? error.message : 'Generation failed';
+    console.error('[generate] AI generation unavailable, using verified template library:', reason);
+    return Response.json({
+      course: buildTemplateCourse(r),
+      model: 'template-library',
+      source: 'template',
+      notice: `AI generation unavailable (${reason.slice(0, 160)}). Built from the pre-verified snippet library instead.`,
+    });
   }
 }

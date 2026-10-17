@@ -57,6 +57,27 @@ export const courseRequestSchema = z.object({
 
 export type CourseRequest = z.infer<typeof courseRequestSchema>;
 
+export const executionSchema = z.object({
+  runtime: z.string().max(120),
+  snippets: z
+    .array(z.object({ id: z.string().max(20), ok: z.boolean(), stdout: z.string().max(20000), error: z.string().max(1000) }))
+    .max(40),
+  exercises: z
+    .array(
+      z.object({
+        id: z.string().max(20),
+        compiles: z.boolean(),
+        error: z.string().max(1000),
+        tests: z.array(z.object({ passed: z.boolean(), actual: z.string().max(2000) })).max(20),
+      }),
+    )
+    .max(20),
+});
+
+export type Execution = z.infer<typeof executionSchema>;
+
+export type GenerationSource = 'ai' | 'template';
+
 export const METRIC_KEYS = ['CE', 'TC', 'SA', 'CV', 'SV'] as const;
 export type MetricKey = (typeof METRIC_KEYS)[number];
 export type Band = 'LOW' | 'MEDIUM' | 'HIGH';
@@ -95,4 +116,5 @@ export type Verification = {
   suggestions: string[];
   verifiedAt: string;
   model: string;
+  evidence: string[];
 };
