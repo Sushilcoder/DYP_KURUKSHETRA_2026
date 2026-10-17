@@ -1,5 +1,9 @@
 # Verified Course Material Studio — MVP
 
+<img width="988" height="498" alt="image" src="https://github.com/user-attachments/assets/2192be9a-bebf-4c2e-bfa1-1b592cfe617c" />
+<img width="1666" height="435" alt="image" src="https://github.com/user-attachments/assets/093bccea-13e4-44c1-9600-7f801c7385df" />
+
+
 A starter implementation for the TechSummitTrainers PS5 challenge. It creates a course pack from a topic/source text, generates PowerPoint and PDF slide exports, per-slide trainer notes, extracted snippet files, exercise/test folders, a quiz, a one-page cheat sheet, a ZIP archive, and an evidence-oriented verification report.
 
 > **Important:** this is an MVP scaffold, not a production security certification. The included Docker sandbox controller is for local development only because it accesses the Docker socket. Never expose it publicly. Production should replace the socket-based controller with a hardened execution service (gVisor or Firecracker microVMs), immutable image digests, authentication, rate limiting, audit controls, and a rendered-slide inspection worker.
