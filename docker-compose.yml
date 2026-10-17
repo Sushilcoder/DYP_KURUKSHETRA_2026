@@ -1,0 +1,100 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: studio
+      POSTGRES_USER: studio
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-studio_dev_only_change_me}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U studio -d studio"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+
+  # Local development only: this controller mounts Docker's socket. Do not expose it publicly.
+  # Production should replace this controller with a hardened VM-based execution service.
+  sandbox:
+    build: ./sandbox
+    user: "0:0"
+    environment:
+      RUNTIME_VOLUME_NAME: verified-course-studio_runtime_jobs
+      JOBS_ROOT: /runtime_jobs
+      PYTHON_IMAGE: ${PYTHON_IMAGE:-python:3.12.15-slim-bookworm}
+      JAVA_IMAGE: ${JAVA_IMAGE:-eclipse-temurin:21.0.12.1_1-jdk-jammy}
+    volumes:
+      - runtime_jobs:/runtime_jobs
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "127.0.0.1:8082:8081"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8081/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  renderer:
+    build: ./renderer
+    environment:
+      STORAGE_ROOT: /app/storage/materials
+    volumes:
+      - studio_storage:/app/storage
+    expose:
+      - "8082"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8082/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://studio:${POSTGRES_PASSWORD:-studio_dev_only_change_me}@postgres:5432/studio
+      SANDBOX_URL: http://sandbox:8081
+      RENDERER_URL: http://renderer:8082
+      STORAGE_ROOT: /app/storage/materials
+      CORS_ORIGINS: http://localhost:3000
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      MAX_REPAIR_ATTEMPTS: ${MAX_REPAIR_ATTEMPTS:-2}
+    volumes:
+      - studio_storage:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      sandbox:
+        condition: service_healthy
+      renderer:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3000:3000"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  studio_storage:
+  runtime_jobs:
+    name: verified-course-studio_runtime_jobs
