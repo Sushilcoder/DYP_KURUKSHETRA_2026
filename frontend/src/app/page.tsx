@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import type { Course, Verification } from '@/lib/course-schema';
+import type { Course, Execution, Verification } from '@/lib/course-schema';
+import { executePython } from '@/lib/python-runner';
 import { ConfidenceBadge } from '@/components/confidence-badge';
 import { CourseForm, type FormState } from '@/components/course-form';
 import { ScoreBreakdown } from '@/components/score-breakdown';
@@ -43,6 +44,7 @@ export default function Home() {
   const [verification, setVerification] = useState<Verification | null>(null);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [verifying, setVerifying] = useState(false);
+  const [notice, setNotice] = useState('');
 
   async function run(initialFeedback: string[] = []) {
     setBusy(true);
@@ -55,7 +57,7 @@ export default function Home() {
     try {
       for (let n = 1; n <= MAX_ATTEMPTS; n++) {
         setPhase(n === 1 ? 'Generating course content...' : `Score was LOW. Regenerating (attempt ${n}/${MAX_ATTEMPTS})...`);
-        const { course: c } = await post<{ course: Course }>('/api/generate', {
+        const { course: c, notice: genNotice } = await post<{ course: Course; notice?: string }>('/api/generate', {
           topic: form.topic,
           level: form.level,
           duration: Number(form.duration),
@@ -66,10 +68,19 @@ export default function Home() {
           feedback,
         });
         setCourse(c);
+        setNotice(genNotice ?? '');
         setVerification(null);
-        setPhase('Compiling, running tests and scoring...');
         setVerifying(true);
-        const v = await post<Verification>('/api/verify', { course: c, language: form.language, topic: form.topic });
+        let execution: Execution | null = null;
+        if (form.language === 'python') {
+          setPhase('Executing every snippet and test in a sandboxed Python runtime...');
+          execution = await executePython(c).catch((err) => {
+            console.error('[runner] Python execution unavailable', err);
+            return null;
+          });
+        }
+        setPhase('Running static analysis and scoring...');
+        const v = await post<Verification>('/api/verify', { course: c, language: form.language, topic: form.topic, execution });
         setVerifying(false);
 
         history.push({ n, score: v.score, band: v.band });
@@ -175,9 +186,23 @@ export default function Home() {
                 </div>
               </div>
 
+              {notice && (
+                <div className="alert info">
+                  <b>Template mode</b>
+                  <span>{notice}</span>
+                </div>
+              )}
+
               {verification && (
                 <>
                   <ScoreBreakdown v={verification} />
+                  {verification.evidence.length > 0 && (
+                    <ul className="evidence-chips" aria-label="Verification evidence">
+                      {verification.evidence.map((e) => (
+                        <li key={e}>{e}</li>
+                      ))}
+                    </ul>
+                  )}
                   {verification.band === 'MEDIUM' && verification.suggestions.length > 0 && (
                     <div className="warnings">
                       <b>Suggested fixes</b>
