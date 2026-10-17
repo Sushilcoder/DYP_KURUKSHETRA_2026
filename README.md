@@ -1,8 +1,7 @@
 # Verified Course Material Studio — MVP
 
 <img width="988" height="498" alt="image" src="https://github.com/user-attachments/assets/2192be9a-bebf-4c2e-bfa1-1b592cfe617c" />
-<img width="1075" height="867" alt="image" src="https://github.com/user-attachments/assets/218f746b-c173-4f30-9621-a73070e46ecb" />
-
+<img width="1666" height="435" alt="image" src="https://github.com/user-attachments/assets/093bccea-13e4-44c1-9600-7f801c7385df" />
 
 
 A starter implementation for the TechSummitTrainers PS5 challenge. It creates a course pack from a topic/source text, generates PowerPoint and PDF slide exports, per-slide trainer notes, extracted snippet files, exercise/test folders, a quiz, a one-page cheat sheet, a ZIP archive, and an evidence-oriented verification report.
